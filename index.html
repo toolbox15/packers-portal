@@ -3,88 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Packers Fan Portal</title>
-
+    <title>Packers Portal | Spin & Win</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="icon" href="logo.png">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body {
-            background-color: #203731; /* Packers Green */
-            color: white;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        :root { --green: #203731; --gold: #FFB612; }
+        body { background-color: var(--green); color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; padding: 10px; overflow-x: hidden; }
+        
+        .logo { width: 100px; margin-top: 10px; border-radius: 15px; }
+        
+        /* THE BIG COUPON BUTTON */
+        .coupon-btn {
+            display: block; width: 90%; max-width: 400px; margin: 20px auto;
+            background: var(--gold); color: var(--green); text-decoration: none;
+            padding: 30px 10px; font-size: 1.8em; font-weight: 900; border-radius: 20px;
+            box-shadow: 0 8px 0 #b38600; text-transform: uppercase;
         }
 
-        .logo { width: 150px; margin-bottom: 20px; border-radius: 20px; }
-
-        h1 { color: #FFB612; margin-bottom: 10px; text-transform: uppercase; }
-
-        .button-container { width: 100%; max-width: 300px; }
-
-        .btn {
-            display: block;
-            background-color: #FFB612; /* Packers Gold */
-            color: #203731;
-            padding: 18px;
-            margin: 15px 0;
-            text-decoration: none;
-            font-weight: bold;
-            border-radius: 12px;
-            font-size: 1.1em;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
+        /* SPIN WHEEL STYLES */
+        #root { margin-top: 20px; }
+        .wheel-wrap { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+        .pointer { 
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 20px solid transparent; 
+            border-right: 20px solid transparent; border-top: 40px solid var(--gold); z-index: 10;
         }
-
-        .btn:active { transform: scale(0.95); }
-
-        .instruction-box {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 0.85em;
-            margin-top: 30px;
-            border: 1px dashed #FFB612;
-            max-width: 280px;
+        canvas { border: 8px solid white; border-radius: 50%; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        
+        .spin-button {
+            margin-top: 25px; padding: 15px 40px; font-size: 1.2em; font-weight: bold;
+            background: white; color: var(--green); border: none; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 4px #ccc;
         }
-
-        .footer { margin-top: auto; padding-top: 20px; font-size: 0.7em; opacity: 0.6; }
+        .spin-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .result-text { font-size: 1.5em; color: var(--gold); margin-top: 20px; font-weight: bold; min-height: 1.6em; }
     </style>
 </head>
 <body>
 
-    <img src="logo.png" alt="Bar Logo" class="logo">
+    <img src="logo.png" alt="Bar Logo" class="logo" onerror="this.src='https://via.placeholder.com/100?text=LOGO'">
 
-    <h1>Packers Portal</h1>
-    <p>Gameday Headquarters</p>
+    <a href="deal.html" class="coupon-btn">🎫 UNLOCK COUPON</a>
 
-    <div class="button-container">
-        <a href="deal.html" class="btn">🔓 UNLOCK TODAY'S DEAL</a>
+    <div id="root"></div>
 
-        <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Packers+Gameday+at+the+Bar&details=Don't+miss+the+kickoff+and+exclusive+deals!&location=BAR+ADDRESS+HERE" class="btn">📅 ADD NEXT GAME TO CALENDAR</a>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-        <a href="sms:?body=I'm at the bar! Join me at the Packers Portal: https://toolbox15.github.io/packers-portal/" class="btn">✉️ INVITE A FRIEND</a>
-    </div>
+        const DiscountWheel = () => {
+            const [spinning, setSpinning] = useState(false);
+            const [result, setResult] = useState("");
+            const canvasRef = useRef(null);
+            
+            const options = ["FREE CHIP", "10% OFF", "BOGO BEER", "FREE SODA", "$1 OFF", "WIN WINGS"];
+            const colors = ["#203731", "#FFB612", "#203731", "#FFB612", "#203731", "#FFB612"];
 
-    <div class="instruction-box">
-        <strong>PRO TIP:</strong> To use this like a real app, tap the <strong>Share</strong> icon and select <strong>'Add to Home Screen'</strong>. 
-        <br><br>
-        <em>No URL bar, no browser—just the Portal!</em>
-    </div>
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                const arc = Math.PI / (options.length / 2);
+                
+                options.forEach((opt, i) => {
+                    const angle = i * arc;
+                    ctx.fillStyle = colors[i];
+                    ctx.beginPath();
+                    ctx.moveTo(150, 150);
+                    ctx.arc(150, 150, 150, angle, angle + arc, false);
+                    ctx.fill();
+                    
+                    ctx.save();
+                    ctx.fillStyle = "white";
+                    ctx.translate(150 + Math.cos(angle + arc / 2) * 100, 150 + Math.sin(angle + arc / 2) * 100);
+                    ctx.rotate(angle + arc / 2 + Math.PI / 2);
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillText(opt, -ctx.measureText(opt).width / 2, 0);
+                    ctx.restore();
+                });
+            }, []);
 
-    <div class="footer">
-        © 2026 Your Bar Name | Powered by Packers Portal
+            const spin = () => {
+                if (spinning) return;
+                setSpinning(true);
+                setResult("Spinning...");
+                
+                const canvas = canvasRef.current;
+                const extraSpins = Math.floor(Math.random() * 5) + 5; // 5-10 full rotations
+                const randomStop = Math.floor(Math.random() * 360);
+                const totalRotation = (extraSpins * 360) + randomStop;
+
+                canvas.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
+                canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+                setTimeout(() => {
+                    const actualAngle = (360 - (randomStop % 360)) % 360;
+                    const index = Math.floor(actualAngle / (360 / options.length));
+                    setResult(`WINNER: ${options[index]}!`);
+                    setSpinning(false);
+                }, 4000);
+            };
+
+            return (
+                <div>
+                    <div className="wheel-wrap">
+                        <div className="pointer"></div>
+                        <canvas ref={canvasRef} width="300" height="300"></canvas>
+                    </div>
+                    <button className="spin-button" onClick={spin} disabled={spinning}>
+                        {spinning ? "GOOD LUCK..." : "SPIN FOR DISCOUNT"}
+                    </button>
+                    <div className="result-text">{result}</div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DiscountWheel />);
+    </script>
+
+    <div style="margin-top:40px; font-size:0.8em; color:rgba(255,255,255,0.7); border-top: 1px solid var(--gold); padding-top:10px;">
+        ★ <b>SAVE THIS APP:</b> Tap the 'Share' icon and select <b>'Add to Home Screen'</b>.
     </div>
 
 </body>
