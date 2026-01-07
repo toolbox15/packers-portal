@@ -10,41 +10,52 @@
 
     <style>
         :root { --primary: #203731; --secondary: #FFB612; }
-        body { background-color: var(--primary); color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; overflow: hidden; }
+        body { background-color: var(--primary); color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; overflow-x: hidden; }
         
         .logo-box { width: 100%; height: 80px; display: flex; justify-content: center; margin-bottom: 10px; }
         .logo-box img { height: 100%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
+        /* Wiggle Animation for Owner Reset */
+        .wiggle-anim { animation: wiggle 0.5s ease; }
+        @keyframes wiggle {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            50% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* BIG COUPON CARD */
         .special-card {
             background: white; color: black; width: 95%; max-width: 400px;
             margin: 15px auto; padding: 20px 10px; border-radius: 20px;
-            border: 4px solid var(--secondary);
+            border: 5px solid var(--secondary); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .special-card h2 { margin: 0; font-size: 2.8em; color: var(--primary); font-weight: 900; }
+        .special-card p { margin: 5px 0 0; font-weight: bold; text-transform: uppercase; color: #444; }
 
-        .wheel-wrap { position: relative; width: 280px; height: 280px; margin: 20px auto; opacity: 1; transition: opacity 0.5s; }
-        /* Removed the opacity 0.2 - we want it to look normal but just be unclickable */
-
+        .wheel-wrap { position: relative; width: 280px; height: 280px; margin: 25px auto; }
         .pointer { 
             position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
             width: 0; height: 0; border-left: 15px solid transparent; 
             border-right: 15px solid transparent; border-top: 30px solid var(--secondary); z-index: 10;
         }
-        canvas { border: 5px solid white; border-radius: 50%; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+        canvas { border: 6px solid white; border-radius: 50%; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); box-shadow: 0 0 20px rgba(0,0,0,0.3); }
         
         .spin-button {
-            padding: 15px 40px; font-size: 1.2em; font-weight: bold;
+            padding: 18px 50px; font-size: 1.3em; font-weight: bold;
             background: var(--secondary); color: var(--primary); border: none; border-radius: 50px;
-            cursor: pointer; box-shadow: 0 4px #b38600;
+            cursor: pointer; box-shadow: 0 6px #b38600; active { transform: translateY(3px); box-shadow: 0 2px #b38600; }
         }
-        .spin-button:disabled { background: #555; color: #888; box-shadow: none; cursor: default; }
+        .spin-button:disabled { background: #555; color: #888; box-shadow: none; }
 
-        .winner-text { margin-top: 15px; font-size: 1.8em; font-weight: bold; color: var(--secondary); min-height: 40px; }
+        .winner-display { margin-top: 20px; font-size: 2em; font-weight: bold; color: var(--secondary); min-height: 50px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
     <div class="logo-box">
-        <img src="logo.png" id="logo-trigger" alt="Portal Logo">
+        <img src="logo.png" id="logo-trigger" alt="BAR LOGO">
     </div>
 
     <div id="root"></div>
@@ -59,17 +70,17 @@
             const [rotation, setRotation] = useState(0);
             const canvasRef = useRef(null);
             
-            // Audio Tick for Note 9
+            // Note 9 Optimized Audio Context
             const playTick = () => {
                 try {
                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
                     const osc = ctx.createOscillator();
                     const g = ctx.createGain();
                     osc.connect(g); g.connect(ctx.destination);
-                    osc.frequency.value = 800;
+                    osc.frequency.value = 700;
                     g.gain.setValueAtTime(0.1, ctx.currentTime);
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
-                    osc.start(); osc.stop(ctx.currentTime + 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+                    osc.start(); osc.stop(ctx.currentTime + 0.06);
                 } catch(e) {}
             };
 
@@ -83,27 +94,28 @@
                     setResult("SEE YOU NEXT GAME!");
                 }
 
-                // SECRET OWNER GESTURE
+                // STEALTH OWNER LOGIC
                 let clicks = 0;
                 let isArmed = false;
                 const logo = document.getElementById('logo-trigger');
                 
                 logo.onclick = () => {
                     clicks++;
-                    // First trigger: Triple tap "arms" the reset
                     if (clicks === 3 && !isArmed) {
                         isArmed = true; 
                         clicks = 0;
-                        console.log("Owner Mode Armed"); // Only visible in code console
                     } 
-                    // Second trigger: One more tap while armed performs the reset
                     else if (isArmed) {
+                        // Reset Action
                         localStorage.removeItem('userHasSpun');
                         setHasUsedSpin(false);
                         setResult("");
                         isArmed = false;
                         clicks = 0;
-                        alert("Reset Successful"); // Optional: confirms to owner it worked
+                        
+                        // Stealth Wiggle Confirmation
+                        logo.classList.add('wiggle-anim');
+                        setTimeout(() => logo.classList.remove('wiggle-anim'), 600);
                     }
                 };
             }, []);
@@ -123,12 +135,20 @@
             const spin = () => {
                 if (spinning || hasUsedSpin) return;
                 setSpinning(true);
-                const extraSpins = 6 + Math.floor(Math.random() * 5);
+                setResult("GOOD LUCK...");
+                
+                const extraSpins = 7 + Math.floor(Math.random() * 5);
                 const randomStop = Math.floor(Math.random() * 360);
                 const newRotation = rotation + (extraSpins * 360) + randomStop;
                 setRotation(newRotation);
                 
-                for(let i=0; i<15; i++) { setTimeout(() => playTick(), i * 200); }
+                // Sound loop
+                let t = 0;
+                const ticker = setInterval(() => {
+                    playTick();
+                    t++;
+                    if (t > 20) clearInterval(ticker);
+                }, 180);
 
                 setTimeout(() => {
                     setSpinning(false);
@@ -143,8 +163,8 @@
             return (
                 <div>
                     <div className="special-card">
-                        <h2 style={{margin:0, color:'#203731'}}>$10 PITCHERS</h2>
-                        <small>TODAY'S SPECIAL</small>
+                        <h2>$10 PITCHERS</h2>
+                        <p>Gameday Special</p>
                     </div>
 
                     <div className="wheel-wrap">
@@ -156,14 +176,14 @@
                         ></canvas>
                     </div>
 
-                    <div className="winner-text">{result}</div>
+                    <div className="winner-display">{result}</div>
 
                     {!hasUsedSpin ? (
                         <button className="spin-button" onClick={spin} disabled={spinning}>
                             {spinning ? "SPINNING..." : "TAP TO SPIN"}
                         </button>
                     ) : (
-                        <p style={{opacity: 0.6}}>Thanks for playing!</p>
+                        <p style={{fontSize: '1.1em', marginTop: '10px', color: '#ccc'}}>One spin per person. Enjoy the game!</p>
                     )}
                 </div>
             );
