@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Packers Portal | Spin & Win</title>
+    <title>Packers Portal</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         :root { --green: #203731; --gold: #FFB612; }
-        body { background-color: var(--green); color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
+        body { background-color: var(--green); color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
         
+        .logo { width: 80px; cursor: pointer; transition: transform 0.2s; }
+        .logo:active { transform: scale(0.9); }
+
         .special-card {
             background: white; color: black; width: 90%; max-width: 400px;
             margin: 15px auto; padding: 20px 10px; border-radius: 20px;
-            border: 4px solid var(--gold); box-shadow: 0 0 15px rgba(255, 182, 18, 0.4);
+            border: 4px solid var(--gold);
         }
         .special-card h2 { margin: 0; font-size: 2.2em; color: var(--green); }
 
-        .wheel-wrap { position: relative; width: 280px; height: 280px; margin: 20px auto; }
+        .wheel-wrap { position: relative; width: 280px; height: 280px; margin: 20px auto; opacity: 0.3; transition: opacity 0.5s; }
+        .wheel-wrap.active { opacity: 1; }
+
         .pointer { 
             position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
             width: 0; height: 0; border-left: 15px solid transparent; 
@@ -30,17 +35,19 @@
         .spin-button {
             padding: 15px 40px; font-size: 1.2em; font-weight: bold;
             background: var(--gold); color: var(--green); border: none; border-radius: 50px;
-            box-shadow: 0 4px #b38600; cursor: pointer;
+            cursor: pointer;
         }
-        .spin-button:disabled { background: #666; color: #ccc; box-shadow: none; }
-        .result-text { font-size: 1.6em; color: var(--gold); margin-top: 15px; font-weight: bold; min-height: 40px; }
+        .spin-button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .status-msg { margin-top: 10px; font-weight: bold; color: var(--gold); }
     </style>
 </head>
 <body>
 
+    <img src="logo.png" id="logo" class="logo" alt="Logo" onerror="this.src='https://via.placeholder.com/80?text=LOGO'">
+
     <div class="special-card">
-        <h2 id="deal-text">$10 PITCHERS</h2>
-        <p style="margin:5px 0 0; font-weight:bold; color:#333;">GAMEDAY SPECIAL</p>
+        <h2>$10 PITCHERS</h2>
+        <p style="margin:5px 0 0; font-weight:bold;">GAMEDAY SPECIAL</p>
     </div>
 
     <div id="root"></div>
@@ -48,28 +55,41 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        const DiscountWheel = () => {
+        const GamedayPortal = () => {
+            const [isUnlocked, setIsUnlocked] = useState(false);
             const [spinning, setSpinning] = useState(false);
             const [result, setResult] = useState("");
-            const [hasSpun, setHasSpun] = useState(false);
             const canvasRef = useRef(null);
             
-            // Audio objects - pointing to your GitHub files
-            // (I added backup web links so you can hear it working now)
-            const tickAudio = useRef(new Audio('tick.mp3'));
-            const winAudio = useRef(new Audio('win.mp3'));
+            // Internal Audio (Beep sound) - No external file needed
+            const playTick = () => {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            };
 
             const options = ["FREE SHOT", "$1 OFF", "FREE SODA", "10% OFF", "BOGO BEER", "WIN WINGS"];
             const colors = ["#203731", "#FFB612", "#203731", "#FFB612", "#203731", "#FFB612"];
 
             useEffect(() => {
-                // Check if they already spun today
-                const lastSpin = localStorage.getItem('lastPackerSpin');
-                if (lastSpin) {
-                    setHasSpun(true);
-                    setResult("See you next quarter!");
-                }
                 drawWheel();
+                // Logo Click Logic for Owner Control
+                let clicks = 0;
+                document.getElementById('logo').onclick = () => {
+                    clicks++;
+                    if (clicks === 3) {
+                        setIsUnlocked(true);
+                        setResult("WHEEL UNLOCKED BY OWNER!");
+                    }
+                };
             }, []);
 
             const drawWheel = () => {
@@ -87,60 +107,51 @@
             };
 
             const spin = () => {
-                if (spinning || hasSpun) return;
-
-                // CRITICAL: Play and immediately pause sound to "unlock" it for mobile
-                tickAudio.current.play().then(() => tickAudio.current.pause());
-
+                if (spinning || !isUnlocked) return;
                 setSpinning(true);
-                setResult("SPINNING...");
+                setResult("GO PACK GO!");
                 
                 const canvas = canvasRef.current;
                 const randomStop = Math.floor(Math.random() * 360);
-                const totalRotation = (8 * 360) + randomStop; // 8 rotations + result
-
+                const totalRotation = (6 * 360) + randomStop;
                 canvas.style.transform = `rotate(${totalRotation}deg)`;
 
-                // Play ticking sounds
-                let tickCount = 0;
-                const tickInterval = setInterval(() => {
-                    tickAudio.current.currentTime = 0;
-                    tickAudio.current.play().catch(() => {});
-                    tickCount++;
-                    if (tickCount > 25) clearInterval(tickInterval);
-                }, 150);
+                // Play ticks
+                let timer = 0;
+                for(let i=0; i<30; i++) {
+                    setTimeout(() => playTick(), i * 130);
+                }
 
                 setTimeout(() => {
                     const actualAngle = (360 - (randomStop % 360)) % 360;
                     const index = Math.floor(actualAngle / (360 / options.length));
-                    
                     setResult(`WINNER: ${options[index]}!`);
-                    winAudio.current.play().catch(() => {});
-                    
                     setSpinning(false);
-                    setHasSpun(true);
-                    
-                    // Lock the wheel for this user
-                    localStorage.setItem('lastPackerSpin', new Date().getTime());
                 }, 4000);
             };
 
             return (
                 <div>
-                    <div className="wheel-wrap">
+                    <div className={`wheel-wrap ${isUnlocked ? 'active' : ''}`}>
                         <div className="pointer"></div>
                         <canvas ref={canvasRef} width="280" height="280"></canvas>
                     </div>
-                    <button className="spin-button" onClick={spin} disabled={spinning || hasSpun}>
-                        {hasSpun ? "SPUN FOR THIS QUARTER" : "SPIN FOR DISCOUNT"}
-                    </button>
-                    <div className="result-text">{result}</div>
+                    
+                    {!isUnlocked ? (
+                        <p style={{color: '#888'}}>Wheel is currently locked.<br/>Waiting for next Quarter...</p>
+                    ) : (
+                        <button className="spin-button" onClick={spin} disabled={spinning}>
+                            {spinning ? "SPINNING..." : "SPIN FOR DISCOUNT"}
+                        </button>
+                    )}
+                    
+                    <div className="status-msg">{result}</div>
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<DiscountWheel />);
+        root.render(<GamedayPortal />);
     </script>
 
 </body>
