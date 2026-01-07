@@ -2,48 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Packers Playoff Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Packers Fan Portal</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="icon" href="logo.png">
+
     <style>
-        :root { --packers-green: #203731; --packers-gold: #FFB612; }
-        body { background-color: var(--packers-green); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; text-align: center; }
-        .header { background: var(--packers-gold); color: var(--packers-green); padding: 20px; font-weight: 900; font-size: 1.5rem; text-transform: uppercase; }
-        .container { padding: 20px; }
-        .countdown { font-size: 1.2rem; margin: 15px 0; border: 1px solid var(--packers-gold); display: inline-block; padding: 10px 20px; border-radius: 8px; }
-        .booster-card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; margin: 20px 0; border-left: 5px solid var(--packers-gold); text-align: left; }
-        .price { color: var(--packers-gold); font-size: 1.4rem; font-weight: bold; float: right; }
-        .btn { background: var(--packers-gold); color: var(--packers-green); display: block; text-align: center; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold; margin-top: 15px; font-size: 1.1rem; }
-        .vcf-btn { background: white; color: var(--packers-green); margin-top: 30px; }
-        img.hero { width: 100%; border-radius: 10px; margin-bottom: 20px; }
+        body {
+            background-color: #203731; /* Packers Green */
+            color: white;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .logo { width: 150px; margin-bottom: 20px; border-radius: 20px; }
+
+        h1 { color: #FFB612; margin-bottom: 10px; text-transform: uppercase; }
+
+        .button-container { width: 100%; max-width: 300px; }
+
+        .btn {
+            display: block;
+            background-color: #FFB612; /* Packers Gold */
+            color: #203731;
+            padding: 18px;
+            margin: 15px 0;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 12px;
+            font-size: 1.1em;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        .instruction-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            margin-top: 30px;
+            border: 1px dashed #FFB612;
+            max-width: 280px;
+        }
+
+        .footer { margin-top: auto; padding-top: 20px; font-size: 0.7em; opacity: 0.6; }
     </style>
 </head>
 <body>
 
-    <div class="header">Packers Playoff Hub</div>
+    <img src="logo.png" alt="Bar Logo" class="logo">
 
-    <div class="container">
-        <div class="countdown">🏈 KICKOFF: SATURDAY 7:00PM</div>
-        
-        <h2>GO PACK GO!</h2>
-        <p>Scan your phone to unlock exclusive gameday boosters.</p>
+    <h1>Packers Portal</h1>
+    <p>Gameday Headquarters</p>
 
-        <div class="booster-card">
-            <span class="price">$5</span>
-            <h3>The Frozen Tundra Ale</h3>
-            <p>Add a 16oz Green & Gold craft pour to your order.</p>
-            <a href="mailto:bar-owner@gmail.com?subject=BOOSTER: Tundra Ale" class="btn">CLAIM DEAL</a>
-        </div>
+    <div class="button-container">
+        <a href="deal.html" class="btn">🔓 UNLOCK TODAY'S DEAL</a>
 
-        <div class="booster-card">
-            <span class="price">$12</span>
-            <h3>Touchdown Wings</h3>
-            <p>10 Double-fried wings. Choose: Buffalo or Gold Garlic.</p>
-            <a href="mailto:bar-owner@gmail.com?subject=BOOSTER: Wings" class="btn">CLAIM DEAL</a>
-        </div>
+        <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Packers+Gameday+at+the+Bar&details=Don't+miss+the+kickoff+and+exclusive+deals!&location=BAR+ADDRESS+HERE" class="btn">📅 ADD NEXT GAME TO CALENDAR</a>
 
-        <a href="packers-contact.vcf" class="btn vcf-btn">📥 SAVE BAR TO CONTACTS</a>
-        <p style="font-size: 0.8rem; opacity: 0.7;">Save our info for priority table booking!</p>
+        <a href="sms:?body=I'm at the bar! Join me at the Packers Portal: https://toolbox15.github.io/packers-portal/" class="btn">✉️ INVITE A FRIEND</a>
+    </div>
+
+    <div class="instruction-box">
+        <strong>PRO TIP:</strong> To use this like a real app, tap the <strong>Share</strong> icon and select <strong>'Add to Home Screen'</strong>. 
+        <br><br>
+        <em>No URL bar, no browser—just the Portal!</em>
+    </div>
+
+    <div class="footer">
+        © 2026 Your Bar Name | Powered by Packers Portal
     </div>
 
 </body>
-</html> 
+</html>
