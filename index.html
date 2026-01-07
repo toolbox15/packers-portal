@@ -3,54 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Packers Portal | Spin & Win</title>
-    
+    <title>Packers Portal | Gameday</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
         :root { --green: #203731; --gold: #FFB612; }
-        body { background-color: var(--green); color: white; font-family: 'Arial', sans-serif; text-align: center; margin: 0; padding: 10px; overflow-x: hidden; }
+        body { background-color: var(--green); color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; overflow-x: hidden; }
         
-        .logo { width: 100px; margin-top: 10px; border-radius: 15px; }
-        
-        /* THE BIG COUPON BUTTON */
-        .coupon-btn {
-            display: block; width: 90%; max-width: 400px; margin: 20px auto;
-            background: var(--gold); color: var(--green); text-decoration: none;
-            padding: 30px 10px; font-size: 1.8em; font-weight: 900; border-radius: 20px;
-            box-shadow: 0 8px 0 #b38600; text-transform: uppercase;
+        /* Smaller Top Button */
+        .top-btn {
+            display: inline-block; background: rgba(255,255,255,0.1); color: white;
+            padding: 10px 20px; text-decoration: none; border-radius: 30px;
+            font-size: 0.9em; border: 1px solid var(--gold); margin-top: 10px;
         }
 
-        /* SPIN WHEEL STYLES */
-        #root { margin-top: 20px; }
-        .wheel-wrap { position: relative; width: 300px; height: 300px; margin: 0 auto; }
-        .pointer { 
-            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 0; border-left: 20px solid transparent; 
-            border-right: 20px solid transparent; border-top: 40px solid var(--gold); z-index: 10;
+        /* BIG GAMEDAY SPECIAL CARD */
+        .special-card {
+            background: white; color: black; width: 90%; max-width: 400px;
+            margin: 20px auto; padding: 25px 10px; border-radius: 20px;
+            border: 5px solid var(--gold); box-shadow: 0 0 20px rgba(255, 182, 18, 0.5);
+            animation: pulse 2s infinite;
         }
-        canvas { border: 8px solid white; border-radius: 50%; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+        .special-card h2 { margin: 0; font-size: 2.5em; font-weight: 900; color: var(--green); }
+        .special-card p { margin: 5px 0 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* WHEEL STUFF */
+        .wheel-wrap { position: relative; width: 280px; height: 280px; margin: 20px auto; }
+        .pointer { 
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 15px solid transparent; 
+            border-right: 15px solid transparent; border-top: 30px solid var(--gold); z-index: 10;
+        }
+        canvas { border: 5px solid white; border-radius: 50%; }
         
         .spin-button {
-            margin-top: 25px; padding: 15px 40px; font-size: 1.2em; font-weight: bold;
-            background: white; color: var(--green); border: none; border-radius: 50px;
-            cursor: pointer; box-shadow: 0 4px #ccc;
+            margin-top: 15px; padding: 15px 40px; font-size: 1.2em; font-weight: bold;
+            background: var(--gold); color: var(--green); border: none; border-radius: 50px;
+            cursor: pointer;
         }
-        .spin-button:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .result-text { font-size: 1.5em; color: var(--gold); margin-top: 20px; font-weight: bold; min-height: 1.6em; }
+        .result-text { font-size: 1.8em; color: var(--gold); margin-top: 15px; font-weight: bold; height: 50px; }
     </style>
 </head>
 <body>
 
-    <img src="logo.png" alt="Bar Logo" class="logo" onerror="this.src='https://via.placeholder.com/100?text=LOGO'">
+    <img src="logo.png" alt="Logo" style="width: 70px; margin-top: 10px;" onerror="this.style.display='none'">
+    <br>
+    <a href="deal.html" class="top-btn">View All Deals</a>
 
-    <a href="deal.html" class="coupon-btn">🎫 UNLOCK COUPON</a>
+    <div class="special-card">
+        <p>Current Special</p>
+        <h2>$10 PITCHERS</h2>
+        <p>Show server to redeem</p>
+    </div>
 
     <div id="root"></div>
 
@@ -62,49 +74,52 @@
             const [result, setResult] = useState("");
             const canvasRef = useRef(null);
             
-            const options = ["FREE CHIP", "10% OFF", "BOGO BEER", "FREE SODA", "$1 OFF", "WIN WINGS"];
+            // Audio Refs
+            const tickAudio = new Audio('tick.mp3');
+            const winAudio = new Audio('win.mp3');
+
+            const options = ["FREE SHOT", "10% OFF", "BOGO BEER", "FREE SODA", "$1 OFF", "WIN WINGS"];
             const colors = ["#203731", "#FFB612", "#203731", "#FFB612", "#203731", "#FFB612"];
 
             useEffect(() => {
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
                 const arc = Math.PI / (options.length / 2);
-                
                 options.forEach((opt, i) => {
                     const angle = i * arc;
                     ctx.fillStyle = colors[i];
-                    ctx.beginPath();
-                    ctx.moveTo(150, 150);
-                    ctx.arc(150, 150, 150, angle, angle + arc, false);
-                    ctx.fill();
-                    
-                    ctx.save();
-                    ctx.fillStyle = "white";
-                    ctx.translate(150 + Math.cos(angle + arc / 2) * 100, 150 + Math.sin(angle + arc / 2) * 100);
-                    ctx.rotate(angle + arc / 2 + Math.PI / 2);
-                    ctx.font = 'bold 14px Arial';
-                    ctx.fillText(opt, -ctx.measureText(opt).width / 2, 0);
-                    ctx.restore();
+                    ctx.beginPath(); ctx.moveTo(140, 140); ctx.arc(140, 140, 140, angle, angle + arc, false); ctx.fill();
+                    ctx.save(); ctx.fillStyle = "white"; ctx.translate(140 + Math.cos(angle + arc / 2) * 90, 140 + Math.sin(angle + arc / 2) * 90);
+                    ctx.rotate(angle + arc / 2 + Math.PI / 2); ctx.font = 'bold 12px Arial';
+                    ctx.fillText(opt, -ctx.measureText(opt).width / 2, 0); ctx.restore();
                 });
             }, []);
 
             const spin = () => {
                 if (spinning) return;
                 setSpinning(true);
-                setResult("Spinning...");
+                setResult("GO PACK GO!");
                 
                 const canvas = canvasRef.current;
-                const extraSpins = Math.floor(Math.random() * 5) + 5; // 5-10 full rotations
                 const randomStop = Math.floor(Math.random() * 360);
-                const totalRotation = (extraSpins * 360) + randomStop;
+                const totalRotation = (10 * 360) + randomStop;
 
                 canvas.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)';
                 canvas.style.transform = `rotate(${totalRotation}deg)`;
 
+                // Play ticking sounds during spin
+                let ticks = 0;
+                const interval = setInterval(() => {
+                    tickAudio.play().catch(()=>{});
+                    ticks++;
+                    if (ticks > 20) clearInterval(interval);
+                }, 150);
+
                 setTimeout(() => {
                     const actualAngle = (360 - (randomStop % 360)) % 360;
                     const index = Math.floor(actualAngle / (360 / options.length));
-                    setResult(`WINNER: ${options[index]}!`);
+                    setResult(options[index]);
+                    winAudio.play().catch(()=>{});
                     setSpinning(false);
                 }, 4000);
             };
@@ -113,10 +128,10 @@
                 <div>
                     <div className="wheel-wrap">
                         <div className="pointer"></div>
-                        <canvas ref={canvasRef} width="300" height="300"></canvas>
+                        <canvas ref={canvasRef} width="280" height="280"></canvas>
                     </div>
                     <button className="spin-button" onClick={spin} disabled={spinning}>
-                        {spinning ? "GOOD LUCK..." : "SPIN FOR DISCOUNT"}
+                        {spinning ? "SPINNING..." : "SPIN FOR DISCOUNT"}
                     </button>
                     <div className="result-text">{result}</div>
                 </div>
@@ -127,8 +142,8 @@
         root.render(<DiscountWheel />);
     </script>
 
-    <div style="margin-top:40px; font-size:0.8em; color:rgba(255,255,255,0.7); border-top: 1px solid var(--gold); padding-top:10px;">
-        ★ <b>SAVE THIS APP:</b> Tap the 'Share' icon and select <b>'Add to Home Screen'</b>.
+    <div style="margin-top:30px; font-size:0.75em; opacity: 0.8;">
+        ★ Tap 'Share' > 'Add to Home Screen' to save app
     </div>
 
 </body>
