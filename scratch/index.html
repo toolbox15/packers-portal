@@ -4,47 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bears Gameday Scratch-Off</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.5.5/dist/scratchcard.min.js"></script>
+    
     <style>
-        body { background-color: #0B162A; color: white; text-align: center; font-family: 'Arial Black', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        #scratch-container { position: relative; width: 300px; height: 300px; margin: 20px auto; border: 6px solid #C83803; background-color: #1a2a44; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        canvas { cursor: pointer; }
-        .instruction { color: #C83803; font-weight: bold; margin-top: 15px; text-transform: uppercase; }
-        h1 { margin: 0; color: #fff; text-shadow: 2px 2px #C83803; }
-        #verify-time { font-size: 0.9rem; color: #FFA500; margin-top: 10px; font-weight: bold; }
+        /* This section locks the screen from moving */
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; /* Stops scrolling completely */
+            background-color: #0B162A; 
+            color: white; 
+            text-align: center; 
+            font-family: 'Arial Black', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            touch-action: none; /* Stops the 'bounce' effect on Android/iOS */
+        }
+
+        #scratch-container { 
+            position: relative; 
+            width: 300px; 
+            height: 300px; 
+            margin: 15px auto; 
+            border: 6px solid #C83803; 
+            background-color: #1a2a44; 
+            box-shadow: 0 0 25px rgba(0,0,0,0.7);
+            border-radius: 8px;
+            touch-action: none; /* Specifically locks the game area */
+        }
+
+        canvas { 
+            cursor: pointer; 
+            touch-action: none; 
+            border-radius: 4px;
+        }
+
+        .instruction { color: #C83803; font-weight: bold; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        h1 { margin: 0; color: #fff; text-shadow: 2px 2px #C83803; font-size: 1.8rem; }
+        #verify-time { font-size: 0.9rem; color: #FFA500; margin-top: 10px; font-weight: bold; height: 20px; }
     </style>
 </head>
 <body>
+
     <h1>BEAR DOWN</h1>
-    <p>Scratch to reveal your prize!</p>
+    <p style="margin: 5px 0; font-size: 0.9rem;">Rub the screen to reveal!</p>
+
     <div id="scratch-container"></div>
+
     <p class="instruction">Must reveal 60% to win</p>
     <div id="verify-time"></div>
 
     <script>
         window.onload = function() {
-            // These direct links bypass all folder pathing issues
-            const coverImg = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
-            const prizeImg = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
+            // Using the absolute paths we know work
+            const cover = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
+            const prize = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
 
             const sc = new ScratchCard('#scratch-container', {
                 scratchType: SCRATCH_TYPE.CIRCLE,
                 containerWidth: 300,
                 containerHeight: 300,
-                imageForwardSrc: coverImg,  
-                imageBackgroundSrc: prizeImg, 
-                clearZoneRadius: 45, 
+                imageForwardSrc: cover,  
+                imageBackgroundSrc: prize, 
+                clearZoneRadius: 40, 
                 percentToFinish: 60,  
                 callback: function () {
-                    const timeStr = new Date().toLocaleTimeString();
-                    document.getElementById('verify-time').innerText = "VERIFIED AT: " + timeStr;
-                    alert('WINNER!\nVerified at: ' + timeStr);
+                    const now = new Date();
+                    document.getElementById('verify-time').innerText = "VERIFIED: " + now.toLocaleTimeString();
+                    alert('WINNER! Show this to your bartender.');
                 }
             });
 
             sc.init().catch(err => {
-                document.getElementById('verify-time').innerHTML = "IMAGE ERROR: Check GitHub Actions!";
+                console.error("Initialization failed:", err);
             });
+            
+            // Prevent the default "pull to refresh" on mobile devices
+            document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
         };
     </script>
 </body>
