@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bears Gameday Scratch-Off</title>
+    
+    <script src="https://unpkg.com/scratchcard-js@0.1.0/dist/scratchcard.min.js"></script>
+    
+    <style>
+        body { background-color: #0B162A; color: white; text-align: center; font-family: sans-serif; }
+        #scratch-container { position: relative; width: 300px; height: 300px; margin: 20px auto; border: 4px solid #C83803; }
+        .instruction { color: #C83803; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>BEAR DOWN SCRATCH-OFF</h1>
+    <p>Rub the screen to reveal your Halftime Prize!</p>
+
+    <div id="scratch-container"></div>
+
+    <p class="instruction">MUST SCRATCH 60% TO CLAIM</p>
+
+    <script>
+        // Setup the Scratch Card
+        const scContainer = document.getElementById('scratch-container');
+        const sc = new ScratchCard('#scratch-container', {
+            scratchType: SCRATCH_TYPE.CIRCLE,
+            containerWidth: 300,
+            containerHeight: 300,
+            imageForwardSrc: 'cover.png', // The Navy Blue Cover
+            imageBackgroundSrc: 'prize.png', // The Prize Image
+            htmlBackground: '', 
+            clearZoneRadius: 30,
+            percentToFinish: 60, // Scans 60% and then reveals all
+            callback: function () {
+                alert('WINNER! Show this screen to your server.');
+            }
+        });
+
+        sc.init();
+    </script>
+</body>
+</html>
