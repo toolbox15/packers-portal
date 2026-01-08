@@ -27,13 +27,13 @@
             height: 300px; 
             margin: 20px auto; 
             border: 6px solid #C83803; 
-            background-color: #ffffff; /* If you see white, the background image is missing */
+            background-color: #1a2a44; 
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        canvas { cursor: pointer; z-index: 10; position: relative; }
+        canvas { cursor: pointer; }
         .instruction { color: #C83803; font-weight: bold; margin-top: 15px; text-transform: uppercase; }
         h1 { margin: 0; color: #fff; text-shadow: 2px 2px #C83803; }
-        #verify-time { font-size: 0.9rem; color: #FFA500; margin-top: 10px; font-weight: bold; min-height: 20px; }
+        #verify-time { font-size: 0.9rem; color: #FFA500; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -48,7 +48,7 @@
 
     <script>
         window.onload = function() {
-            // DIRECT LINKS TO YOUR GITHUB IMAGES
+            // These are direct links to your specific GitHub files
             const coverImg = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
             const prizeImg = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
 
@@ -64,15 +64,13 @@
                     const now = new Date();
                     const timeStr = now.toLocaleTimeString();
                     document.getElementById('verify-time').innerText = "VERIFIED AT: " + timeStr;
-                    alert('RESULT REVEALED!\nTime: ' + timeStr);
+                    alert('WINNER!\n\nVerified at: ' + timeStr + '\nShow this to your bartender.');
                 }
             });
 
-            sc.init().then(() => {
-                console.log("Scratch card loaded successfully");
-            }).catch(err => {
-                console.error("Scratch card failed:", err);
-                document.getElementById('verify-time').innerHTML = "CANNOT LOAD IMAGES.<br>Are they named correctly in GitHub?";
+            sc.init().catch(err => {
+                console.error("Load Error:", err);
+                document.getElementById('verify-time').innerHTML = "IMAGE ERROR: Check GitHub Actions status!";
             });
         };
     </script>
