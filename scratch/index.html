@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bears Gameday Scratch-Off</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.5.0/dist/scratchcard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@latest/dist/scratchcard.min.js"></script>
     
     <style>
         html, body { 
@@ -13,21 +13,44 @@
             overflow: hidden; background-color: #0B162A; 
             color: white; text-align: center; font-family: sans-serif;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            touch-action: none; 
+            touch-action: manipulation;
         }
         #scratch-container { 
             position: relative; width: 300px; height: 300px; 
             margin: 10px auto; border: 6px solid #C83803; 
             background-color: #1a2a44; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            display: none; /* Hidden until button is clicked */
+            display: none;
         }
-        canvas { touch-action: none; cursor: pointer; }
+        canvas { 
+            touch-action: none; 
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
         .btn {
-            background-color: #C83803; color: white; border: none;
-            padding: 15px 30px; font-weight: bold; font-size: 1.2rem;
-            border-radius: 5px; cursor: pointer; margin-top: 20px;
+            background-color: #C83803; 
+            color: white; 
+            border: none;
+            padding: 15px 30px; 
+            font-weight: bold; 
+            font-size: 1.2rem;
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-top: 20px;
         }
-        #debug-log { font-size: 0.7rem; color: #777; margin-top: 10px; }
+        .btn:hover {
+            background-color: #e74c3c;
+        }
+        #debug-log { 
+            font-size: 0.9rem; 
+            color: #bbb; 
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
@@ -37,54 +60,175 @@
 
     <button id="start-btn" class="btn">START SCRATCH-OFF</button>
 
-    <div id="scratch-container"></div>
+    <div id="scratch-container">
+        <!-- Canvas will be inserted here by the library -->
+    </div>
 
-    <div id="debug-log">Status: Waiting for user...</div>
+    <div id="debug-log">Status: Ready</div>
 
     <script>
-        const log = (msg) => document.getElementById('debug-log').innerText = "Status: " + msg;
+        // Enhanced logging
+        const log = (msg) => {
+            console.log(msg);
+            document.getElementById('debug-log').innerText = "Status: " + msg + " - " + new Date().toLocaleTimeString();
+        };
 
+        let scratchCard = null;
+        
         document.getElementById('start-btn').addEventListener('click', function() {
+            log("Button clicked - starting game");
+            
+            // Hide button
             this.style.display = 'none';
-            document.getElementById('scratch-container').style.display = 'block';
-            document.getElementById('instruction').innerText = "Rub the screen!";
+            
+            // Show scratch container
+            const container = document.getElementById('scratch-container');
+            container.style.display = 'block';
+            
+            document.getElementById('instruction').innerText = "Scratch the surface to reveal!";
+            
             initGame();
         });
 
         function initGame() {
-            if (typeof ScratchCard === 'undefined') {
-                log("Error: Engine failed to load. Try a different browser.");
+            log("Initializing game...");
+            
+            // First, let's check if ScratchCard is available
+            if (typeof window.ScratchCard === 'undefined') {
+                log("ERROR: ScratchCard library not loaded!");
+                alert("Failed to load game engine. Please check your connection.");
                 return;
             }
+            
+            log("ScratchCard library loaded successfully");
 
-            const cover = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
-            const prize = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
+            // Create simpler test images to eliminate network issues
+            // Base64 encoded simple images for testing
+            const coverImage = createTestImage('#1a2a44', 'SCRATCH');
+            const prizeImage = createTestImage('#0B162A', 'WINNER!', '#C83803');
+            
+            try {
+                // Initialize the scratch card
+                scratchCard = new window.ScratchCard('#scratch-container', {
+                    scratchType: window.ScratchCard.TYPE.CIRCLE, // Try using the TYPE enum if available
+                    containerWidth: 300,
+                    containerHeight: 300,
+                    imageForwardSrc: coverImage,
+                    imageBackgroundSrc: prizeImage,
+                    htmlBackground: '<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 24px; color: #C83803; font-weight: bold;">WINNER!</div>',
+                    clearZoneRadius: 30,
+                    percentToFinish: 50, // Lower percentage for testing
+                    nPoints: 30, // Number of points to draw
+                    pointSize: 4, // Size of each point
+                    callback: function () {
+                        log("Scratch card completed!");
+                        alert('WINNER! Show this to your bartender.');
+                    }
+                });
 
-            // FIX: Use string 'circle' instead of undefined SCRATCH_TYPE.CIRCLE
-            const sc = new ScratchCard('#scratch-container', {
-                scratchType: 'circle',  // Changed from SCRATCH_TYPE.CIRCLE to 'circle'
-                containerWidth: 300,
-                containerHeight: 300,
-                imageForwardSrc: cover,
-                imageBackgroundSrc: prize,
-                clearZoneRadius: 40,
-                percentToFinish: 60,
-                callback: function () {
-                    alert('WINNER! Show this to your bartender.');
-                }
-            });
-
-            sc.init().then(() => {
-                log("Game Active!");
-            }).catch((err) => {
-                log("Load Error: " + err);
-            });
+                // Initialize and handle promise
+                scratchCard.init()
+                    .then(() => {
+                        log("Game initialized successfully!");
+                        console.log("Scratch card object:", scratchCard);
+                        
+                        // Add event listener for debugging
+                        scratchCard.canvas.addEventListener('touchstart', function() {
+                            log("Touch started on canvas");
+                        });
+                        
+                        scratchCard.canvas.addEventListener('mousedown', function() {
+                            log("Mouse down on canvas");
+                        });
+                    })
+                    .catch((error) => {
+                        log("Initialization failed: " + error);
+                        console.error("Scratch card error:", error);
+                        
+                        // Fallback: create a simple manual scratch effect
+                        createFallbackScratch();
+                    });
+                    
+            } catch (error) {
+                log("Error creating scratch card: " + error);
+                console.error("Error:", error);
+                createFallbackScratch();
+            }
         }
 
-        // Final safety: stop the phone from scrolling
+        // Create a simple test image as data URL
+        function createTestImage(bgColor, text, textColor = 'white') {
+            // Create a simple SVG image as data URL
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+                <rect width="100%" height="100%" fill="${bgColor}"/>
+                <text x="50%" y="50%" font-family="Arial" font-size="24" fill="${textColor}" 
+                      text-anchor="middle" dy=".3em" font-weight="bold">${text}</text>
+            </svg>`;
+            
+            return 'data:image/svg+xml;base64,' + btoa(svg);
+        }
+
+        // Fallback function if library fails
+        function createFallbackScratch() {
+            log("Using fallback scratch implementation");
+            
+            const container = document.getElementById('scratch-container');
+            container.innerHTML = `
+                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#1a2a44; color:white;">
+                    <div style="text-align:center;">
+                        <h3>Scratch Here</h3>
+                        <p>(Drag mouse/finger over this area)</p>
+                    </div>
+                </div>
+            `;
+            
+            let isScratching = false;
+            let scratchPercent = 0;
+            
+            container.addEventListener('mousedown', () => isScratching = true);
+            container.addEventListener('touchstart', () => isScratching = true);
+            container.addEventListener('mouseup', () => isScratching = false);
+            container.addEventListener('touchend', () => isScratching = false);
+            
+            container.addEventListener('mousemove', (e) => {
+                if (isScratching) {
+                    scratchPercent += 0.5;
+                    updateScratch();
+                }
+            });
+            
+            container.addEventListener('touchmove', (e) => {
+                if (isScratching) {
+                    e.preventDefault();
+                    scratchPercent += 1;
+                    updateScratch();
+                }
+            }, { passive: false });
+            
+            function updateScratch() {
+                if (scratchPercent >= 100) {
+                    container.style.opacity = '0.3';
+                    alert('WINNER! Show this to your bartender.');
+                    log("Fallback: Game won!");
+                }
+            }
+        }
+
+        // Prevent scrolling when touching canvas
         document.addEventListener('touchmove', function(e) { 
-            if(e.target.tagName === 'CANVAS') e.preventDefault(); 
+            if (e.target.tagName === 'CANVAS' || e.target.id === 'scratch-container') {
+                e.preventDefault(); 
+            }
         }, { passive: false });
+        
+        // Add mouseleave to stop scratching
+        document.addEventListener('mouseleave', function() {
+            if (scratchCard && scratchCard.canvas) {
+                scratchCard.canvas.dispatchEvent(new Event('mouseup'));
+            }
+        });
+        
+        log("Page loaded successfully");
     </script>
 </body>
 </html>
