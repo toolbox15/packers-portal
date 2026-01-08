@@ -2,44 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bears Gameday Scratch-Off</title>
     
-    <script src="https://unpkg.com/scratchcard-js@0.1.0/dist/scratchcard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.5.5/dist/scratchcard.min.js"></script>
     
     <style>
-        body { background-color: #0B162A; color: white; text-align: center; font-family: sans-serif; }
-        #scratch-container { position: relative; width: 300px; height: 300px; margin: 20px auto; border: 4px solid #C83803; }
-        .instruction { color: #C83803; font-weight: bold; margin-top: 10px; }
+        body { 
+            background-color: #0B162A; 
+            color: white; 
+            text-align: center; 
+            font-family: 'Arial Black', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        #scratch-container { 
+            position: relative; 
+            width: 300px; 
+            height: 300px; 
+            margin: 20px auto; 
+            border: 6px solid #C83803; 
+            background-color: #fff; /* Fallback if prize image fails */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        canvas { cursor: pointer; }
+        .instruction { color: #C83803; font-weight: bold; margin-top: 15px; text-transform: uppercase; }
+        h1 { margin-bottom: 5px; color: #fff; text-shadow: 2px 2px #C83803; }
     </style>
 </head>
 <body>
 
-    <h1>BEAR DOWN SCRATCH-OFF</h1>
-    <p>Rub the screen to reveal your Halftime Prize!</p>
+    <h1>BEAR DOWN</h1>
+    <p>Rub the screen to reveal your prize!</p>
 
     <div id="scratch-container"></div>
 
-    <p class="instruction">MUST SCRATCH 60% TO CLAIM</p>
+    <p class="instruction">Must reveal 60% to win</p>
 
     <script>
-        // Setup the Scratch Card
-        const scContainer = document.getElementById('scratch-container');
-        const sc = new ScratchCard('#scratch-container', {
-            scratchType: SCRATCH_TYPE.CIRCLE,
-            containerWidth: 300,
-            containerHeight: 300,
-            imageForwardSrc: 'cover.png', // The Navy Blue Cover
-            imageBackgroundSrc: 'prize.png', // The Prize Image
-            htmlBackground: '', 
-            clearZoneRadius: 30,
-            percentToFinish: 60, // Scans 60% and then reveals all
-            callback: function () {
-                alert('WINNER! Show this screen to your server.');
-            }
-        });
+        // Wait for page to load
+        window.onload = function() {
+            const scContainer = document.getElementById('scratch-container');
+            
+            // Initializing the scratch card with relative paths for your subfolder
+            const sc = new ScratchCard('#scratch-container', {
+                scratchType: SCRATCH_TYPE.CIRCLE,
+                containerWidth: 300,
+                containerHeight: 300,
+                imageForwardSrc: './cover.png',  // The Navy Cover in your /scratch/ folder
+                imageBackgroundSrc: './prize.png', // The Prize Image in your /scratch/ folder
+                clearZoneRadius: 40, // Slightly larger for better mobile feel
+                percentToFinish: 60, 
+                callback: function () {
+                    alert('WINNER! Show this to your bartender.');
+                }
+            });
 
-        sc.init();
+            sc.init().catch(err => {
+                console.error("Image loading error:", err);
+                alert("Make sure cover.png and prize.png are in the scratch folder!");
+            });
+        };
     </script>
 </body>
 </html>
