@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bears Gameday Scratch-Off</title>
     
-    <script src="https://unpkg.com/scratchcard-js@1.5.0/dist/scratchcard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.5.0/dist/scratchcard.min.js"></script>
     
     <style>
         html, body { 
@@ -19,34 +19,44 @@
             position: relative; width: 300px; height: 300px; 
             margin: 10px auto; border: 6px solid #C83803; 
             background-color: #1a2a44; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            touch-action: none;
+            display: none; /* Hidden until button is clicked */
         }
         canvas { touch-action: none; cursor: pointer; }
-        .instruction { color: #C83803; font-weight: bold; text-transform: uppercase; margin-top: 10px; }
+        .btn {
+            background-color: #C83803; color: white; border: none;
+            padding: 15px 30px; font-weight: bold; font-size: 1.2rem;
+            border-radius: 5px; cursor: pointer; margin-top: 20px;
+        }
         #debug-log { font-size: 0.7rem; color: #777; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <h1 style="color:#fff; text-shadow: 2px 2px #C83803; margin:0;">BEAR DOWN</h1>
-    <p id="main-status">Ready to Play?</p>
+    <p id="instruction">Tap the button to play!</p>
+
+    <button id="start-btn" class="btn">START SCRATCH-OFF</button>
 
     <div id="scratch-container"></div>
 
-    <p class="instruction">Must reveal 60% to win</p>
-    <div id="debug-log">Status: Initializing...</div>
+    <div id="debug-log">Status: Waiting for user...</div>
 
     <script>
         const log = (msg) => document.getElementById('debug-log').innerText = "Status: " + msg;
 
-        window.onload = function() {
-            // Check if the library is available
+        document.getElementById('start-btn').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.getElementById('scratch-container').style.display = 'block';
+            document.getElementById('instruction').innerText = "Rub the screen!";
+            initGame();
+        });
+
+        function initGame() {
             if (typeof ScratchCard === 'undefined') {
-                log("Critical Error: Library Failed. Try Refreshing.");
+                log("Error: Engine failed to load. Try a different browser.");
                 return;
             }
 
-            // Using direct links we've verified
             const cover = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
             const prize = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
 
@@ -64,14 +74,16 @@
             });
 
             sc.init().then(() => {
-                log("Game Active. Rub to Reveal!");
+                log("Game Active!");
             }).catch((err) => {
-                log("Error Loading Images: " + err);
+                log("Load Error: " + err);
             });
+        }
 
-            // Prevent the page from bouncing/scrolling
-            document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
-        };
+        // Final safety: stop the phone from scrolling
+        document.addEventListener('touchmove', function(e) { 
+            if(e.target.tagName === 'CANVAS') e.preventDefault(); 
+        }, { passive: false });
     </script>
 </body>
 </html>
