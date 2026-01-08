@@ -15,7 +15,11 @@
             font-family: 'Arial Black', sans-serif;
             margin: 0;
             padding: 20px;
-            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
         }
         #scratch-container { 
             position: relative; 
@@ -23,19 +27,19 @@
             height: 300px; 
             margin: 20px auto; 
             border: 6px solid #C83803; 
-            background-color: #fff;
+            background-color: #ffffff; /* If you see white, the background image is missing */
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        canvas { cursor: pointer; }
+        canvas { cursor: pointer; z-index: 10; position: relative; }
         .instruction { color: #C83803; font-weight: bold; margin-top: 15px; text-transform: uppercase; }
-        h1 { margin-bottom: 5px; color: #fff; text-shadow: 2px 2px #C83803; }
-        #verify-time { font-size: 0.8rem; color: #666; margin-top: 10px; }
+        h1 { margin: 0; color: #fff; text-shadow: 2px 2px #C83803; }
+        #verify-time { font-size: 0.9rem; color: #FFA500; margin-top: 10px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
 <body>
 
     <h1>BEAR DOWN</h1>
-    <p>Rub the screen to reveal your prize!</p>
+    <p>Scratch to reveal your prize!</p>
 
     <div id="scratch-container"></div>
 
@@ -44,34 +48,31 @@
 
     <script>
         window.onload = function() {
-            // SETTINGS: Swap './prize.png' to './sorry.png' when the bar wants people to lose
-            const currentPrize = './prize.png'; 
+            // DIRECT LINKS TO YOUR GITHUB IMAGES
+            const coverImg = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
+            const prizeImg = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
 
             const sc = new ScratchCard('#scratch-container', {
                 scratchType: SCRATCH_TYPE.CIRCLE,
                 containerWidth: 300,
                 containerHeight: 300,
-                imageForwardSrc: './cover.png',  
-                imageBackgroundSrc: currentPrize, 
-                clearZoneRadius: 40, 
+                imageForwardSrc: coverImg,  
+                imageBackgroundSrc: prizeImg, 
+                clearZoneRadius: 45, 
                 percentToFinish: 60,  
                 callback: function () {
                     const now = new Date();
                     const timeStr = now.toLocaleTimeString();
-                    
-                    // Update the text on screen and show the alert
-                    document.getElementById('verify-time').innerText = "Verified at: " + timeStr;
-                    
-                    if (currentPrize === './prize.png') {
-                        alert('WINNER!\n\nVerified at: ' + timeStr + '\nShow this to your bartender now.');
-                    } else {
-                        alert('NOT A WINNER THIS TIME\n\nVerified at: ' + timeStr + '\nBetter luck next quarter!');
-                    }
+                    document.getElementById('verify-time').innerText = "VERIFIED AT: " + timeStr;
+                    alert('RESULT REVEALED!\nTime: ' + timeStr);
                 }
             });
 
-            sc.init().catch(err => {
-                console.error("Image loading error:", err);
+            sc.init().then(() => {
+                console.log("Scratch card loaded successfully");
+            }).catch(err => {
+                console.error("Scratch card failed:", err);
+                document.getElementById('verify-time').innerHTML = "CANNOT LOAD IMAGES.<br>Are they named correctly in GitHub?";
             });
         };
     </script>
