@@ -4,231 +4,458 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bears Gameday Scratch-Off</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@latest/dist/scratchcard.min.js"></script>
-    
     <style>
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background-color: #0B162A; 
-            color: white; text-align: center; font-family: sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            touch-action: manipulation;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        #scratch-container { 
-            position: relative; width: 300px; height: 300px; 
-            margin: 10px auto; border: 6px solid #C83803; 
-            background-color: #1a2a44; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            display: none;
+        
+        body {
+            background-color: #0B162A;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            touch-action: none;
         }
-        canvas { 
-            touch-action: none; 
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
+        
+        h1 {
+            color: #fff;
+            text-shadow: 2px 2px #C83803;
+            margin-bottom: 10px;
+            text-align: center;
         }
+        
+        #instruction {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
         .btn {
-            background-color: #C83803; 
-            color: white; 
+            background-color: #C83803;
+            color: white;
             border: none;
-            padding: 15px 30px; 
-            font-weight: bold; 
+            padding: 15px 30px;
+            font-weight: bold;
             font-size: 1.2rem;
-            border-radius: 5px; 
-            cursor: pointer; 
-            margin-top: 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background-color 0.3s;
         }
+        
         .btn:hover {
             background-color: #e74c3c;
         }
-        #debug-log { 
-            font-size: 0.9rem; 
-            color: #bbb; 
+        
+        #scratch-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 10px auto;
+            border: 6px solid #C83803;
+            background-color: #1a2a44;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: none;
+            overflow: hidden;
+        }
+        
+        #scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        #prize-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0B162A 0%, #1a2a44 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #prize-image h2 {
+            color: #C83803;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        #prize-image p {
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .bear-logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        #progress-bar {
+            width: 80%;
+            height: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        #progress-fill {
+            height: 100%;
+            background-color: #C83803;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        #debug-log {
             margin-top: 20px;
             padding: 10px;
             background: rgba(0,0,0,0.3);
             border-radius: 5px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #bbb;
             max-width: 300px;
-            word-wrap: break-word;
         }
     </style>
 </head>
 <body>
-
-    <h1 style="color:#fff; text-shadow: 2px 2px #C83803; margin:0;">BEAR DOWN</h1>
+    <h1>BEAR DOWN</h1>
     <p id="instruction">Tap the button to play!</p>
-
+    
     <button id="start-btn" class="btn">START SCRATCH-OFF</button>
-
+    
     <div id="scratch-container">
-        <!-- Canvas will be inserted here by the library -->
+        <canvas id="scratch-canvas"></canvas>
+        <div id="prize-image">
+            <div class="bear-logo">🐻</div>
+            <h2>WINNER!</h2>
+            <p>Free Bears Shot!</p>
+            <p>Show this to your bartender</p>
+            <div id="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+        </div>
     </div>
-
-    <div id="debug-log">Status: Ready</div>
+    
+    <div id="debug-log">Status: Ready to play</div>
 
     <script>
-        // Enhanced logging
-        const log = (msg) => {
-            console.log(msg);
-            document.getElementById('debug-log').innerText = "Status: " + msg + " - " + new Date().toLocaleTimeString();
-        };
-
-        let scratchCard = null;
+        // DOM Elements
+        const startBtn = document.getElementById('start-btn');
+        const scratchContainer = document.getElementById('scratch-container');
+        const scratchCanvas = document.getElementById('scratch-canvas');
+        const ctx = scratchCanvas.getContext('2d');
+        const instruction = document.getElementById('instruction');
+        const progressBar = document.getElementById('progress-bar');
+        const progressFill = document.getElementById('progress-fill');
+        const debugLog = document.getElementById('debug-log');
         
-        document.getElementById('start-btn').addEventListener('click', function() {
-            log("Button clicked - starting game");
+        // Game variables
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let totalScratched = 0;
+        const totalPixels = 300 * 300;
+        const requiredPercentage = 60;
+        let gameCompleted = false;
+        
+        // Logging function
+        function log(message) {
+            debugLog.textContent = `Status: ${message}`;
+            console.log(message);
+        }
+        
+        // Initialize canvas
+        function initCanvas() {
+            scratchCanvas.width = 300;
+            scratchCanvas.height = 300;
             
-            // Hide button
-            this.style.display = 'none';
+            // Fill canvas with scratch-off surface
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 0, scratchCanvas.width, scratchCanvas.height);
             
-            // Show scratch container
-            const container = document.getElementById('scratch-container');
-            container.style.display = 'block';
+            // Add scratch-off texture pattern
+            createScratchTexture();
             
-            document.getElementById('instruction').innerText = "Scratch the surface to reveal!";
+            // Add "Scratch Here" text
+            ctx.fillStyle = '#C83803';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('SCRATCH HERE', scratchCanvas.width / 2, scratchCanvas.height / 2);
             
-            initGame();
-        });
-
-        function initGame() {
-            log("Initializing game...");
+            // Reset game state
+            totalScratched = 0;
+            gameCompleted = false;
+            progressFill.style.width = '0%';
+            progressBar.style.display = 'block';
             
-            // First, let's check if ScratchCard is available
-            if (typeof window.ScratchCard === 'undefined') {
-                log("ERROR: ScratchCard library not loaded!");
-                alert("Failed to load game engine. Please check your connection.");
-                return;
+            log("Game started! Start scratching...");
+        }
+        
+        // Create scratch texture
+        function createScratchTexture() {
+            // Create a subtle noise effect for the scratch surface
+            const imageData = ctx.getImageData(0, 0, scratchCanvas.width, scratchCanvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                // Add random noise to RGB channels
+                const noise = Math.random() * 30;
+                data[i] = Math.min(255, data[i] + noise);     // R
+                data[i + 1] = Math.min(255, data[i + 1] + noise); // G
+                data[i + 2] = Math.min(255, data[i + 2] + noise); // B
             }
             
-            log("ScratchCard library loaded successfully");
-
-            // Create simpler test images to eliminate network issues
-            // Base64 encoded simple images for testing
-            const coverImage = createTestImage('#1a2a44', 'SCRATCH');
-            const prizeImage = createTestImage('#0B162A', 'WINNER!', '#C83803');
-            
-            try {
-                // Initialize the scratch card
-                scratchCard = new window.ScratchCard('#scratch-container', {
-                    scratchType: window.ScratchCard.TYPE.CIRCLE, // Try using the TYPE enum if available
-                    containerWidth: 300,
-                    containerHeight: 300,
-                    imageForwardSrc: coverImage,
-                    imageBackgroundSrc: prizeImage,
-                    htmlBackground: '<div style="display: flex; align-items: center; justify-content: center; height: 100%; font-size: 24px; color: #C83803; font-weight: bold;">WINNER!</div>',
-                    clearZoneRadius: 30,
-                    percentToFinish: 50, // Lower percentage for testing
-                    nPoints: 30, // Number of points to draw
-                    pointSize: 4, // Size of each point
-                    callback: function () {
-                        log("Scratch card completed!");
-                        alert('WINNER! Show this to your bartender.');
-                    }
-                });
-
-                // Initialize and handle promise
-                scratchCard.init()
-                    .then(() => {
-                        log("Game initialized successfully!");
-                        console.log("Scratch card object:", scratchCard);
-                        
-                        // Add event listener for debugging
-                        scratchCard.canvas.addEventListener('touchstart', function() {
-                            log("Touch started on canvas");
-                        });
-                        
-                        scratchCard.canvas.addEventListener('mousedown', function() {
-                            log("Mouse down on canvas");
-                        });
-                    })
-                    .catch((error) => {
-                        log("Initialization failed: " + error);
-                        console.error("Scratch card error:", error);
-                        
-                        // Fallback: create a simple manual scratch effect
-                        createFallbackScratch();
-                    });
-                    
-            } catch (error) {
-                log("Error creating scratch card: " + error);
-                console.error("Error:", error);
-                createFallbackScratch();
-            }
+            ctx.putImageData(imageData, 0, 0);
         }
-
-        // Create a simple test image as data URL
-        function createTestImage(bgColor, text, textColor = 'white') {
-            // Create a simple SVG image as data URL
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
-                <rect width="100%" height="100%" fill="${bgColor}"/>
-                <text x="50%" y="50%" font-family="Arial" font-size="24" fill="${textColor}" 
-                      text-anchor="middle" dy=".3em" font-weight="bold">${text}</text>
-            </svg>`;
+        
+        // Start game function
+        function startGame() {
+            // Hide button and show scratch container
+            startBtn.style.display = 'none';
+            scratchContainer.style.display = 'block';
+            instruction.textContent = "Scratch the surface to reveal!";
             
-            return 'data:image/svg+xml;base64,' + btoa(svg);
+            // Initialize canvas
+            initCanvas();
+            
+            // Add event listeners
+            setupEventListeners();
         }
-
-        // Fallback function if library fails
-        function createFallbackScratch() {
-            log("Using fallback scratch implementation");
+        
+        // Setup event listeners for drawing
+        function setupEventListeners() {
+            // Mouse events
+            scratchCanvas.addEventListener('mousedown', startDrawing);
+            scratchCanvas.addEventListener('mousemove', draw);
+            scratchCanvas.addEventListener('mouseup', stopDrawing);
+            scratchCanvas.addEventListener('mouseout', stopDrawing);
             
-            const container = document.getElementById('scratch-container');
-            container.innerHTML = `
-                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#1a2a44; color:white;">
-                    <div style="text-align:center;">
-                        <h3>Scratch Here</h3>
-                        <p>(Drag mouse/finger over this area)</p>
-                    </div>
-                </div>
-            `;
+            // Touch events
+            scratchCanvas.addEventListener('touchstart', handleTouchStart);
+            scratchCanvas.addEventListener('touchmove', handleTouchMove);
+            scratchCanvas.addEventListener('touchend', stopDrawing);
             
-            let isScratching = false;
-            let scratchPercent = 0;
+            // Prevent context menu on right click
+            scratchCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        }
+        
+        // Drawing functions
+        function startDrawing(e) {
+            isDrawing = true;
+            const coords = getCoordinates(e);
+            [lastX, lastY] = [coords.x, coords.y];
+            drawDot(lastX, lastY); // Draw initial dot
+        }
+        
+        function draw(e) {
+            if (!isDrawing || gameCompleted) return;
             
-            container.addEventListener('mousedown', () => isScratching = true);
-            container.addEventListener('touchstart', () => isScratching = true);
-            container.addEventListener('mouseup', () => isScratching = false);
-            container.addEventListener('touchend', () => isScratching = false);
+            const coords = getCoordinates(e);
+            const currentX = coords.x;
+            const currentY = coords.y;
             
-            container.addEventListener('mousemove', (e) => {
-                if (isScratching) {
-                    scratchPercent += 0.5;
-                    updateScratch();
-                }
+            // Draw line from last position to current position
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 25; // Scratch brush size
+            ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            
+            // Update last position
+            [lastX, lastY] = [currentX, currentY];
+            
+            // Update progress
+            updateProgress();
+        }
+        
+        function drawDot(x, y) {
+            if (gameCompleted) return;
+            
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 12, 0, Math.PI * 2); // Draw a circle
+            ctx.fill();
+            
+            updateProgress();
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        // Touch event handlers
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            startDrawing(touch);
+        }
+        
+        function handleTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
             });
+            draw(mouseEvent);
+        }
+        
+        // Get coordinates from event
+        function getCoordinates(e) {
+            const rect = scratchCanvas.getBoundingClientRect();
+            let clientX, clientY;
             
-            container.addEventListener('touchmove', (e) => {
-                if (isScratching) {
-                    e.preventDefault();
-                    scratchPercent += 1;
-                    updateScratch();
-                }
-            }, { passive: false });
+            if (e.type.includes('touch')) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
             
-            function updateScratch() {
-                if (scratchPercent >= 100) {
-                    container.style.opacity = '0.3';
-                    alert('WINNER! Show this to your bartender.');
-                    log("Fallback: Game won!");
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+        
+        // Update progress
+        function updateProgress() {
+            if (gameCompleted) return;
+            
+            // Get image data to calculate scratched percentage
+            const imageData = ctx.getImageData(0, 0, scratchCanvas.width, scratchCanvas.height);
+            const data = imageData.data;
+            let transparentPixels = 0;
+            
+            // Count transparent pixels (alpha channel = 0)
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i] === 0) {
+                    transparentPixels++;
                 }
             }
+            
+            // Calculate percentage
+            const percentage = (transparentPixels / totalPixels) * 100;
+            totalScratched = percentage;
+            
+            // Update progress bar
+            progressFill.style.width = `${Math.min(percentage, 100)}%`;
+            
+            // Check if game is complete
+            if (percentage >= requiredPercentage && !gameCompleted) {
+                gameCompleted = true;
+                completeGame();
+            }
         }
-
+        
+        // Game completion
+        function completeGame() {
+            log("Congratulations! You won!");
+            
+            // Animate completion
+            scratchCanvas.style.transition = 'opacity 0.5s';
+            scratchCanvas.style.opacity = '0';
+            
+            // Show celebration
+            setTimeout(() => {
+                alert('WINNER! 🎉\n\nShow this to your bartender for a free Bears shot!');
+                
+                // Optional: Add confetti effect
+                createConfetti();
+                
+                // Reset button to play again
+                setTimeout(() => {
+                    startBtn.style.display = 'block';
+                    startBtn.textContent = 'PLAY AGAIN';
+                    scratchContainer.style.display = 'none';
+                    scratchCanvas.style.opacity = '1';
+                    instruction.textContent = 'Tap the button to play again!';
+                    progressBar.style.display = 'none';
+                }, 3000);
+            }, 500);
+        }
+        
+        // Simple confetti effect
+        function createConfetti() {
+            const colors = ['#C83803', '#0B162A', '#FFFFFF', '#FFD700'];
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.pointerEvents = 'none';
+            container.style.zIndex = '1000';
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'absolute';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = '50%';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.top = '-20px';
+                confetti.style.opacity = '0.8';
+                
+                // Animation
+                confetti.animate([
+                    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                    { transform: `translateY(${window.innerHeight + 20}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                ], {
+                    duration: 2000 + Math.random() * 1000,
+                    easing: 'cubic-bezier(0.215, 0.610, 0.355, 1)'
+                });
+                
+                container.appendChild(confetti);
+            }
+            
+            document.body.appendChild(container);
+            
+            // Remove confetti after animation
+            setTimeout(() => {
+                document.body.removeChild(container);
+            }, 3000);
+        }
+        
+        // Initialize game
+        startBtn.addEventListener('click', startGame);
+        
         // Prevent scrolling when touching canvas
-        document.addEventListener('touchmove', function(e) { 
-            if (e.target.tagName === 'CANVAS' || e.target.id === 'scratch-container') {
-                e.preventDefault(); 
+        document.addEventListener('touchmove', function(e) {
+            if (e.target === scratchCanvas || scratchCanvas.contains(e.target)) {
+                e.preventDefault();
             }
         }, { passive: false });
         
-        // Add mouseleave to stop scratching
-        document.addEventListener('mouseleave', function() {
-            if (scratchCard && scratchCard.canvas) {
-                scratchCard.canvas.dispatchEvent(new Event('mouseup'));
-            }
-        });
-        
-        log("Page loaded successfully");
+        log("Game loaded successfully. Click START to begin!");
     </script>
 </body>
 </html>
