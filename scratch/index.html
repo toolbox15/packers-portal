@@ -60,8 +60,9 @@
             const cover = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
             const prize = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
 
+            // FIX: Use string 'circle' instead of undefined SCRATCH_TYPE.CIRCLE
             const sc = new ScratchCard('#scratch-container', {
-                scratchType: SCRATCH_TYPE.CIRCLE,
+                scratchType: 'circle',  // Changed from SCRATCH_TYPE.CIRCLE to 'circle'
                 containerWidth: 300,
                 containerHeight: 300,
                 imageForwardSrc: cover,
