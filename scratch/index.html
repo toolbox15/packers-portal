@@ -8,84 +8,84 @@
     <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.5.5/dist/scratchcard.min.js"></script>
     
     <style>
-        /* This section locks the screen from moving */
         html, body { 
-            margin: 0; 
-            padding: 0; 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; /* Stops scrolling completely */
-            background-color: #0B162A; 
-            color: white; 
-            text-align: center; 
-            font-family: 'Arial Black', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            touch-action: none; /* Stops the 'bounce' effect on Android/iOS */
-        }
-
-        #scratch-container { 
-            position: relative; 
-            width: 300px; 
-            height: 300px; 
-            margin: 15px auto; 
-            border: 6px solid #C83803; 
-            background-color: #1a2a44; 
-            box-shadow: 0 0 25px rgba(0,0,0,0.7);
-            border-radius: 8px;
-            touch-action: none; /* Specifically locks the game area */
-        }
-
-        canvas { 
-            cursor: pointer; 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background-color: #0B162A; 
+            color: white; text-align: center; font-family: sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             touch-action: none; 
-            border-radius: 4px;
         }
-
-        .instruction { color: #C83803; font-weight: bold; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        h1 { margin: 0; color: #fff; text-shadow: 2px 2px #C83803; font-size: 1.8rem; }
-        #verify-time { font-size: 0.9rem; color: #FFA500; margin-top: 10px; font-weight: bold; height: 20px; }
+        #scratch-container { 
+            position: relative; width: 300px; height: 300px; 
+            margin: 10px auto; border: 6px solid #C83803; 
+            background-color: #1a2a44; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            touch-action: none;
+        }
+        canvas { touch-action: none; cursor: pointer; }
+        .instruction { color: #C83803; font-weight: bold; text-transform: uppercase; margin-top: 10px; }
+        #debug-log { font-size: 0.7rem; color: #777; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>BEAR DOWN</h1>
-    <p style="margin: 5px 0; font-size: 0.9rem;">Rub the screen to reveal!</p>
+    <h1 style="color:#fff; text-shadow: 2px 2px #C83803; margin:0;">BEAR DOWN</h1>
+    <p id="main-status">Loading assets...</p>
 
     <div id="scratch-container"></div>
 
     <p class="instruction">Must reveal 60% to win</p>
-    <div id="verify-time"></div>
+    <div id="debug-log">Status: Initializing...</div>
 
     <script>
-        window.onload = function() {
-            // Using the absolute paths we know work
-            const cover = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
-            const prize = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
+        // HELPERS
+        const log = (msg) => document.getElementById('debug-log').innerText = "Status: " + msg;
+        const status = (msg) => document.getElementById('main-status').innerText = msg;
 
+        window.onload = function() {
+            log("Window Loaded. Checking Library...");
+
+            // 1. Check if the library loaded
+            if (typeof ScratchCard === 'undefined') {
+                log("Error: Library not loaded. Check internet.");
+                status("Connection Error");
+                return;
+            }
+
+            // 2. Set file paths - we use current folder paths
+            const cover = './cover.png';
+            const prize = './prize.png';
+
+            log("Attempting to draw canvas...");
+
+            // 3. Initialize the engine
             const sc = new ScratchCard('#scratch-container', {
                 scratchType: SCRATCH_TYPE.CIRCLE,
                 containerWidth: 300,
                 containerHeight: 300,
-                imageForwardSrc: cover,  
-                imageBackgroundSrc: prize, 
-                clearZoneRadius: 40, 
-                percentToFinish: 60,  
+                imageForwardSrc: cover,
+                imageBackgroundSrc: prize,
+                clearZoneRadius: 40,
+                percentToFinish: 60,
                 callback: function () {
-                    const now = new Date();
-                    document.getElementById('verify-time').innerText = "VERIFIED: " + now.toLocaleTimeString();
                     alert('WINNER! Show this to your bartender.');
                 }
             });
 
-            sc.init().catch(err => {
-                console.error("Initialization failed:", err);
+            // 4. Force Execution
+            sc.init().then(() => {
+                log("Game Ready! Start Rubbing.");
+                status("Rub the screen!");
+            }).catch((err) => {
+                log("Execution Error: " + err);
+                status("Error Loading Images");
             });
-            
-            // Prevent the default "pull to refresh" on mobile devices
-            document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+
+            // 5. Hard-lock the screen to prevent bouncing
+            document.addEventListener('touchmove', function(e) {
+                if (e.target.tagName === 'CANVAS') {
+                    e.preventDefault();
+                }
+            }, { passive: false });
         };
     </script>
 </body>
