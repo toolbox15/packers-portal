@@ -3,194 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gameday Portal</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    <title>Bears Gameday Scratch-Off</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/scratchcard-js@1.5.5/dist/scratchcard.min.js"></script>
+    
     <style>
-        :root { --primary: #203731; --secondary: #FFB612; }
-        body { background-color: var(--primary); color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; overflow-x: hidden; }
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background-color: #0B162A; 
+            color: white; text-align: center; font-family: sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            touch-action: none; 
+        }
+        #scratch-container { 
+            position: relative; width: 300px; height: 300px; 
+            margin: 10px auto; border: 6px solid #C83803; 
+            background-color: #1a2a44; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        /* This ensures the canvas takes up the whole box */
+        #scratch-container canvas { position: absolute; top: 0; left: 0; touch-action: none; }
         
-        .logo-box { width: 100%; height: 80px; display: flex; justify-content: center; margin-bottom: 10px; }
-        .logo-box img { height: 100%; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-
-        /* Wiggle Animation for Owner Reset */
-        .wiggle-anim { animation: wiggle 0.5s ease; }
-        @keyframes wiggle {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(10deg); }
-            50% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
-            100% { transform: rotate(0deg); }
-        }
-
-        /* BIG COUPON CARD */
-        .special-card {
-            background: white; color: black; width: 95%; max-width: 400px;
-            margin: 15px auto; padding: 20px 10px; border-radius: 20px;
-            border: 5px solid var(--secondary); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .special-card h2 { margin: 0; font-size: 2.8em; color: var(--primary); font-weight: 900; }
-        .special-card p { margin: 5px 0 0; font-weight: bold; text-transform: uppercase; color: #444; }
-
-        .wheel-wrap { position: relative; width: 280px; height: 280px; margin: 25px auto; }
-        .pointer { 
-            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 0; border-left: 15px solid transparent; 
-            border-right: 15px solid transparent; border-top: 30px solid var(--secondary); z-index: 10;
-        }
-        canvas { border: 6px solid white; border-radius: 50%; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); box-shadow: 0 0 20px rgba(0,0,0,0.3); }
-        
-        .spin-button {
-            padding: 18px 50px; font-size: 1.3em; font-weight: bold;
-            background: var(--secondary); color: var(--primary); border: none; border-radius: 50px;
-            cursor: pointer; box-shadow: 0 6px #b38600; active { transform: translateY(3px); box-shadow: 0 2px #b38600; }
-        }
-        .spin-button:disabled { background: #555; color: #888; box-shadow: none; }
-
-        .winner-display { margin-top: 20px; font-size: 2em; font-weight: bold; color: var(--secondary); min-height: 50px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .instruction { color: #C83803; font-weight: bold; text-transform: uppercase; margin-top: 10px; }
+        #status-log { font-size: 0.7rem; color: #555; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="logo-box">
-        <img src="logo.png" id="logo-trigger" alt="BAR LOGO">
-    </div>
+    <h1 style="color:#fff; text-shadow: 2px 2px #C83803; margin:0;">BEAR DOWN</h1>
+    <p id="msg">Loading Game...</p>
 
-    <div id="root"></div>
+    <div id="scratch-container"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+    <p class="instruction">Must reveal 60% to win</p>
+    <div id="status-log">Initializing...</div>
 
-        const GamedayPortal = () => {
-            const [spinning, setSpinning] = useState(false);
-            const [hasUsedSpin, setHasUsedSpin] = useState(false);
-            const [result, setResult] = useState("");
-            const [rotation, setRotation] = useState(0);
-            const canvasRef = useRef(null);
-            
-            // Note 9 Optimized Audio Context
-            const playTick = () => {
-                try {
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    osc.connect(g); g.connect(ctx.destination);
-                    osc.frequency.value = 700;
-                    g.gain.setValueAtTime(0.1, ctx.currentTime);
-                    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
-                    osc.start(); osc.stop(ctx.currentTime + 0.06);
-                } catch(e) {}
-            };
+    <script>
+        // 1. Define your images
+        const coverSrc = 'https://toolbox15.github.io/packers-portal/scratch/cover.png';
+        const prizeSrc = 'https://toolbox15.github.io/packers-portal/scratch/prize.png';
 
-            const options = ["FREE SHOT", "$1 OFF", "FREE SODA", "10% OFF", "BOGO BEER", "WIN WINGS"];
-            const colors = ["#203731", "#FFB612", "#203731", "#FFB612", "#203731", "#FFB612"];
+        function log(text) { document.getElementById('status-log').innerText = text; }
 
-            useEffect(() => {
-                drawWheel();
-                if (localStorage.getItem('userHasSpun') === 'true') {
-                    setHasUsedSpin(true);
-                    setResult("SEE YOU NEXT GAME!");
-                }
-
-                // STEALTH OWNER LOGIC
-                let clicks = 0;
-                let isArmed = false;
-                const logo = document.getElementById('logo-trigger');
-                
-                logo.onclick = () => {
-                    clicks++;
-                    if (clicks === 3 && !isArmed) {
-                        isArmed = true; 
-                        clicks = 0;
-                    } 
-                    else if (isArmed) {
-                        // Reset Action
-                        localStorage.removeItem('userHasSpun');
-                        setHasUsedSpin(false);
-                        setResult("");
-                        isArmed = false;
-                        clicks = 0;
-                        
-                        // Stealth Wiggle Confirmation
-                        logo.classList.add('wiggle-anim');
-                        setTimeout(() => logo.classList.remove('wiggle-anim'), 600);
-                    }
-                };
-            }, []);
-
-            const drawWheel = () => {
-                const ctx = canvasRef.current.getContext('2d');
-                const arc = Math.PI / 3;
-                options.forEach((opt, i) => {
-                    ctx.fillStyle = colors[i];
-                    ctx.beginPath(); ctx.moveTo(140, 140); ctx.arc(140, 140, 140, i * arc, (i + 1) * arc); ctx.fill();
-                    ctx.save(); ctx.translate(140, 140); ctx.rotate(i * arc + arc/2);
-                    ctx.fillStyle = "white"; ctx.font = "bold 14px Arial";
-                    ctx.fillText(opt, 50, 5); ctx.restore();
+        // 2. Pre-load images manually
+        async function initGame() {
+            log("Loading Images...");
+            try {
+                const loadImage = src => new Promise((res, rej) => {
+                    const img = new Image();
+                    img.onload = () => res(img);
+                    img.onerror = rej;
+                    img.src = src;
                 });
-            };
 
-            const spin = () => {
-                if (spinning || hasUsedSpin) return;
-                setSpinning(true);
-                setResult("GOOD LUCK...");
-                
-                const extraSpins = 7 + Math.floor(Math.random() * 5);
-                const randomStop = Math.floor(Math.random() * 360);
-                const newRotation = rotation + (extraSpins * 360) + randomStop;
-                setRotation(newRotation);
-                
-                // Sound loop
-                let t = 0;
-                const ticker = setInterval(() => {
-                    playTick();
-                    t++;
-                    if (t > 20) clearInterval(ticker);
-                }, 180);
+                await Promise.all([loadImage(coverSrc), loadImage(prizeSrc)]);
+                log("Images Loaded. Starting Engine...");
+                document.getElementById('msg').innerText = "Rub the screen!";
 
-                setTimeout(() => {
-                    setSpinning(false);
-                    setHasUsedSpin(true);
-                    localStorage.setItem('userHasSpun', 'true');
-                    const actualAngle = (360 - (newRotation % 360)) % 360;
-                    const idx = Math.floor(actualAngle / 60);
-                    setResult(`WINNER: ${options[idx]}`);
-                }, 4000);
-            };
+                // 3. Initialize the ScratchCard ONLY after images are ready
+                const sc = new ScratchCard('#scratch-container', {
+                    scratchType: SCRATCH_TYPE.CIRCLE,
+                    containerWidth: 300,
+                    containerHeight: 300,
+                    imageForwardSrc: coverSrc,
+                    imageBackgroundSrc: prizeSrc,
+                    clearZoneRadius: 40,
+                    percentToFinish: 60,
+                    callback: function () {
+                        alert('WINNER! Show this to your bartender.');
+                    }
+                });
 
-            return (
-                <div>
-                    <div className="special-card">
-                        <h2>$10 PITCHERS</h2>
-                        <p>Gameday Special</p>
-                    </div>
+                await sc.init();
+                log("Game Ready.");
 
-                    <div className="wheel-wrap">
-                        <div className="pointer"></div>
-                        <canvas 
-                            ref={canvasRef} 
-                            width="280" height="280" 
-                            style={{transform: `rotate(${rotation}deg)`}}
-                        ></canvas>
-                    </div>
+            } catch (err) {
+                log("Error: " + err.message);
+                document.getElementById('msg').innerText = "Refresh Page & Try Again";
+            }
+        }
 
-                    <div className="winner-display">{result}</div>
+        // Run on load
+        window.onload = initGame;
 
-                    {!hasUsedSpin ? (
-                        <button className="spin-button" onClick={spin} disabled={spinning}>
-                            {spinning ? "SPINNING..." : "TAP TO SPIN"}
-                        </button>
-                    ) : (
-                        <p style={{fontSize: '1.1em', marginTop: '10px', color: '#ccc'}}>One spin per person. Enjoy the game!</p>
-                    )}
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<GamedayPortal />);
+        // Prevent standard mobile scrolling
+        document.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
     </script>
 </body>
 </html>
