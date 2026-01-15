@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bears Scratch-Off</title>
     <style>
-        /* Locking the screen and setting the Bears theme */
         body { 
             background-color: #0B162A; 
             color: white; 
@@ -28,11 +27,11 @@
             font-size: 2.2rem;
         }
 
-        /* UPDATED: Increased text size by 2px */
         .reveal-text { 
-            font-size: 18px; /* Was roughly 16px default */
+            font-size: 18px; 
             margin-bottom: 20px;
             color: #fff;
+            padding: 0 10px;
         }
 
         .container { 
@@ -42,22 +41,30 @@
             border: 6px solid #C83803; 
             box-shadow: 0 0 25px rgba(0,0,0,0.7); 
             border-radius: 10px;
+            background-color: #000;
         }
 
-        /* The Prize Image is the background */
+        /* The Instagram Link wrapper sits behind the canvas */
+        #ig-link {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            display: block;
+            pointer-events: none; /* Disabled until scratch is finished */
+            text-decoration: none;
+        }
+
         #prize { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 300px; 
-            height: 300px; 
+            width: 100%; 
+            height: 100%; 
             background-image: url('./prize.png'); 
             background-size: cover; 
-            z-index: 1; 
             border-radius: 4px;
         }
 
-        /* The Scratch Surface is the foreground */
         #scratch-canvas { 
             position: absolute; 
             top: 0; 
@@ -66,6 +73,7 @@
             cursor: crosshair; 
             touch-action: none; 
             border-radius: 4px;
+            transition: opacity 0.8s ease; /* Smooth fade when revealed */
         }
 
         .hint { 
@@ -79,11 +87,13 @@
 </head>
 <body>
 
-    <h1>BEAR DOWN</h1>
-    <p class="reveal-text">Rub to reveal your prize!</p>
+    <h1 id="header">BEAR DOWN</h1>
+    <p class="reveal-text" id="status-text">Rub the helmet to reveal your prize!</p>
 
     <div class="container">
-        <div id="prize"></div>
+        <a id="ig-link" href="https://ig.me/m/USERNAME?text=I%20WON%20THE%20BEARS%20PRIZE!%20🐻" target="_blank">
+            <div id="prize"></div>
+        </a>
         <canvas id="scratch-canvas" width="300" height="300"></canvas>
     </div>
 
@@ -91,52 +101,86 @@
 
     <script>
         const canvas = document.getElementById('scratch-canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const igLink = document.getElementById('ig-link');
+        const statusText = document.getElementById('status-text');
         let isDrawing = false;
+        let isFinished = false;
 
-        // 1. Create the Navy Cover layer
+        // 1. Setup the Navy Cover layer
         const coverImg = new Image();
         coverImg.src = './cover.png';
         coverImg.onload = function() {
             ctx.drawImage(coverImg, 0, 0, 300, 300);
         };
 
-        // Fallback if cover image doesn't load immediately
+        // Fallback color
         ctx.fillStyle = '#0B162A';
         ctx.fillRect(0, 0, 300, 300);
 
-        /**
-         * 2. The Rubbing Logic
-         * To make it rub off SLOWER, we changed the arc radius 
-         * from 25 down to 18. This makes the user work for it!
-         */
+        // 2. Logic to check how much is scratched
+        function checkProgress() {
+            if (isFinished) return;
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const pixels = imageData.data;
+            let clearPixels = 0;
+
+            for (let i = 3; i < pixels.length; i += 4) {
+                if (pixels[i] === 0) clearPixels++;
+            }
+
+            const percentage = (clearPixels / (canvas.width * canvas.height)) * 100;
+
+            if (percentage > 60) {
+                isFinished = true;
+                handleWin();
+            }
+        }
+
+        function handleWin() {
+            // Fade out the canvas
+            canvas.style.opacity = '0';
+            canvas.style.pointerEvents = 'none';
+            
+            // Enable the Instagram Link
+            igLink.style.pointerEvents = 'auto';
+            
+            // Update UI Instructions
+            statusText.innerHTML = "WINNER! <br> Tap the helmet to claim on Instagram!";
+            statusText.style.color = "#FF6600";
+            document.getElementById('header').innerText = "TOUCHDOWN!";
+        }
+
         function scratch(x, y) {
             ctx.globalCompositeOperation = 'destination-out';
             ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI * 2); // Radius reduced to 18 for slower reveal
+            ctx.arc(x, y, 18, 0, Math.PI * 2);
             ctx.fill();
+            checkProgress();
         }
 
-        // 3. Handle Touch (Note 9)
+        // Touch Events
         canvas.addEventListener('touchstart', (e) => {
+            if (isFinished) return;
             isDrawing = true;
             const rect = canvas.getBoundingClientRect();
             scratch(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
         });
 
         canvas.addEventListener('touchmove', (e) => {
-            if (!isDrawing) return;
-            e.preventDefault(); // This is what keeps the screen from bouncing
+            if (!isDrawing || isFinished) return;
+            e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             scratch(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
         });
 
         canvas.addEventListener('touchend', () => isDrawing = false);
 
-        // 4. Handle Mouse
+        // Mouse Events
         canvas.addEventListener('mousedown', () => isDrawing = true);
         canvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return;
+            if (!isDrawing || isFinished) return;
             const rect = canvas.getBoundingClientRect();
             scratch(e.clientX - rect.left, e.clientY - rect.top);
         });
